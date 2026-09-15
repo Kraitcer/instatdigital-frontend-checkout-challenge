@@ -5,7 +5,7 @@ import { ErrorPanel } from './ErrorPanel';
 import { LoadingState } from './LoadingState';
 import { useCreateSessionMutation, useGetCartQuery } from '../api/checkoutApi';
 import { formatMoney } from '../lib/format';
-import { sessionReceived } from '../store/checkoutSlice';
+import { sessionInvalidated, sessionReceived } from '../store/checkoutSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 export function AppLayout() {
@@ -13,7 +13,16 @@ export function AppLayout() {
   const token = useAppSelector((state) => state.checkout.token);
   const requestedSession = useRef(false);
   const [createSession, sessionState] = useCreateSessionMutation();
-  const { data: cart } = useGetCartQuery(undefined, { skip: !token });
+  const cartState = useGetCartQuery(undefined, { skip: !token });
+  const cart = cartState.data;
+
+  useEffect(() => {
+    const failure = cartState.error as { status?: number } | undefined;
+    if (token && failure?.status === 401) {
+      requestedSession.current = false;
+      dispatch(sessionInvalidated());
+    }
+  }, [cartState.error, dispatch, token]);
 
   useEffect(() => {
     if (token || requestedSession.current) return;

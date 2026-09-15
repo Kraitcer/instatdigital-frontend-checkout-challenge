@@ -53,6 +53,14 @@ const checkoutSlice = createSlice({
       state.token = action.payload.token;
       state.sessionId = action.payload.sessionId;
     },
+    sessionInvalidated(state) {
+      state.token = null;
+      state.sessionId = null;
+      state.orderId = null;
+      state.paymentId = null;
+      state.orderKey = null;
+      state.paymentKey = null;
+    },
     formChanged(state, action: PayloadAction<CheckoutFormState>) {
       state.form = action.payload;
     },
@@ -73,6 +81,9 @@ const checkoutSlice = createSlice({
     paymentReceived(state, action: PayloadAction<string>) {
       state.paymentId = action.payload;
     },
+    paymentCleared(state) {
+      state.paymentId = null;
+    },
     orderCleared(state) {
       state.orderId = null;
       state.paymentId = null;
@@ -85,12 +96,14 @@ const checkoutSlice = createSlice({
 export const {
   cardSelected,
   formChanged,
+  paymentCleared,
   orderCleared,
   orderReceived,
   orderRequestStarted,
   paymentReceived,
   paymentRequestStarted,
   sessionReceived,
+  sessionInvalidated,
 } = checkoutSlice.actions;
 
 export const checkoutReducer = checkoutSlice.reducer;

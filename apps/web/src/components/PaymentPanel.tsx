@@ -10,7 +10,12 @@ import {
   useSimulatePaymentMutation,
 } from '../api/checkoutApi';
 import { newIdempotencyKey } from '../lib/checkout';
-import { cardSelected, paymentReceived, paymentRequestStarted } from '../store/checkoutSlice';
+import {
+  cardSelected,
+  paymentCleared,
+  paymentReceived,
+  paymentRequestStarted,
+} from '../store/checkoutSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { ErrorPanel } from './ErrorPanel';
 
@@ -71,6 +76,11 @@ export function PaymentPanel({ order, onPaymentSettled, onPaymentCancelled }: Pa
       })
       .catch(() => undefined);
   }, [dispatch, loadPayments, order.id, paymentId]);
+
+  useEffect(() => {
+    const failure = paymentState.error as { code?: string } | undefined;
+    if (paymentId && failure?.code === 'PAYMENT_NOT_FOUND') dispatch(paymentCleared());
+  }, [dispatch, paymentId, paymentState.error]);
 
   useEffect(() => {
     if (!payment || !terminalPayment.has(payment.status)) return;
