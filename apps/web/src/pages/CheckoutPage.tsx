@@ -24,6 +24,7 @@ import {
 import { formatDateTime, formatMoney } from '../lib/format';
 import {
   formChanged,
+  orderAttemptCleared,
   orderReceived,
   orderRequestStarted,
   type CheckoutFormState,
@@ -98,17 +99,29 @@ export function CheckoutPage() {
   const submitOrder = handleSubmit(async (values) => {
     if (!cartState.data?.items.length) return;
     try {
-      const quote = await createQuote({
-        cartVersion: cartState.data.version,
-        delivery: deliveryFromForm(values),
-      }).unwrap();
-      const key = stored.orderKey ?? newIdempotencyKey();
-      dispatch(orderRequestStarted(key));
-      const body: CreateOrder = {
-        quoteId: quote.id,
-        customer: values.customer,
-        paymentMethod: values.paymentMethod,
-      };
+      const pendingBody = stored.orderBody;
+      const pendingQuoteId = stored.orderQuoteId;
+      let body: CreateOrder;
+      let quoteId: string;
+      let key: string;
+      if (pendingBody && pendingQuoteId && stored.orderKey) {
+        body = pendingBody;
+        quoteId = pendingQuoteId;
+        key = stored.orderKey;
+      } else {
+        const quote = await createQuote({
+          cartVersion: cartState.data.version,
+          delivery: deliveryFromForm(values),
+        }).unwrap();
+        body = {
+          quoteId: quote.id,
+          customer: values.customer,
+          paymentMethod: values.paymentMethod,
+        };
+        quoteId = quote.id;
+        key = newIdempotencyKey();
+        dispatch(orderRequestStarted({ key, quoteId, body }));
+      }
       const nextOrder = await createOrder({ body, idempotencyKey: key }).unwrap();
       dispatch(orderReceived(nextOrder.id));
       if (nextOrder.paymentMethod === 'cash_on_delivery') navigate('/success');
@@ -121,8 +134,16 @@ export function CheckoutPage() {
           setError(field.name as FieldPath<CheckoutFormState>, { message: field.message });
         }
         if (failure.code === 'CART_VERSION_CONFLICT' || failure.code === 'QUOTE_EXPIRED') {
+          dispatch(orderAttemptCleared());
           resetQuote();
           void cartState.refetch();
+        }
+        if (
+          failure.kind === 'http' &&
+          failure.code !== 'CART_VERSION_CONFLICT' &&
+          failure.code !== 'QUOTE_EXPIRED'
+        ) {
+          dispatch(orderAttemptCleared());
         }
       }
     }
@@ -131,7 +152,6 @@ export function CheckoutPage() {
   if (cartState.isLoading || optionsState.isLoading || (stored.orderId && orderState.isLoading)) {
     return <LoadingState>Загружаем оформление</LoadingState>;
   }
-  if (!cartState.data?.items.length && !stored.orderId) return <Navigate to="/" replace />;
 
   return (
     <>

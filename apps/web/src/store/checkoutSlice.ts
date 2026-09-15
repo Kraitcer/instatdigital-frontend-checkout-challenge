@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { Customer } from '@checkout/contracts';
+import type { CreateOrder, Customer } from '@checkout/contracts';
 
 export type DeliveryMode = 'pickup' | 'courier';
 export type PaymentMethod = 'card' | 'cash_on_delivery';
@@ -24,6 +24,8 @@ export type CheckoutState = {
   orderId: string | null;
   paymentId: string | null;
   orderKey: string | null;
+  orderQuoteId: string | null;
+  orderBody: CreateOrder | null;
   paymentKey: string | null;
   form: CheckoutFormState;
 };
@@ -34,6 +36,8 @@ const initialState: CheckoutState = {
   orderId: null,
   paymentId: null,
   orderKey: null,
+  orderQuoteId: null,
+  orderBody: null,
   paymentKey: null,
   form: {
     customer: { name: '', email: '', phone: '' },
@@ -59,6 +63,8 @@ const checkoutSlice = createSlice({
       state.orderId = null;
       state.paymentId = null;
       state.orderKey = null;
+      state.orderQuoteId = null;
+      state.orderBody = null;
       state.paymentKey = null;
     },
     formChanged(state, action: PayloadAction<CheckoutFormState>) {
@@ -67,13 +73,25 @@ const checkoutSlice = createSlice({
     cardSelected(state, action: PayloadAction<string>) {
       state.form.selectedCardId = action.payload;
     },
-    orderRequestStarted(state, action: PayloadAction<string>) {
-      state.orderKey = action.payload;
+    orderRequestStarted(
+      state,
+      action: PayloadAction<{ key: string; quoteId: string; body: CreateOrder }>,
+    ) {
+      state.orderKey = action.payload.key;
+      state.orderQuoteId = action.payload.quoteId;
+      state.orderBody = action.payload.body;
     },
     orderReceived(state, action: PayloadAction<string>) {
       state.orderId = action.payload;
       state.paymentId = null;
+      state.orderQuoteId = null;
+      state.orderBody = null;
       state.paymentKey = null;
+    },
+    orderAttemptCleared(state) {
+      state.orderKey = null;
+      state.orderQuoteId = null;
+      state.orderBody = null;
     },
     paymentRequestStarted(state, action: PayloadAction<string>) {
       state.paymentKey = action.payload;
@@ -88,6 +106,8 @@ const checkoutSlice = createSlice({
       state.orderId = null;
       state.paymentId = null;
       state.orderKey = null;
+      state.orderQuoteId = null;
+      state.orderBody = null;
       state.paymentKey = null;
     },
   },
@@ -99,6 +119,7 @@ export const {
   paymentCleared,
   orderCleared,
   orderReceived,
+  orderAttemptCleared,
   orderRequestStarted,
   paymentReceived,
   paymentRequestStarted,

@@ -16,16 +16,18 @@
     "dev:web": "npm run dev -w @checkout/web",
     "build": "npm run build -w @checkout/contracts && npm run build -w @checkout/api",
     "build:web": "npm run build -w @checkout/web",
+    "check:web": "npm run build:web && npm run format:web",
     "preview:web": "npm run preview -w @checkout/web",
     "start": "npm run start -w @checkout/api",
     "test": "npm run build && npm run test -w @checkout/api",
     "docs:generate": "npm run build && node scripts/openapi.mjs --write",
     "docs:check": "node scripts/openapi.mjs",
-    "check": "npm run format:check && npm test && npm run docs:check",
+    "check": "npm run format:check && npm run build:web && npm test && npm run docs:check",
     "smoke": "node scripts/smoke.mjs",
     "data:reset": "node scripts/reset.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "format:web": "prettier --check apps/web"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "13.0.0",
