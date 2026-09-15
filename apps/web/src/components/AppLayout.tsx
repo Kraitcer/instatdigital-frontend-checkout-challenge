@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import { ShoppingBag } from 'lucide-react';
-import { asApiFailure, ErrorPanel } from './ErrorPanel';
+import { ErrorPanel } from './ErrorPanel';
 import { LoadingState } from './LoadingState';
 import { useCreateSessionMutation, useGetCartQuery } from '../api/checkoutApi';
 import { formatMoney } from '../lib/format';
-import { sessionExpired, sessionReceived } from '../store/checkoutSlice';
+import { sessionReceived } from '../store/checkoutSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 export function AppLayout() {
@@ -13,16 +13,7 @@ export function AppLayout() {
   const token = useAppSelector((state) => state.checkout.token);
   const requestedSession = useRef(false);
   const [createSession, sessionState] = useCreateSessionMutation();
-  const { data: cart, error: cartError } = useGetCartQuery(undefined, { skip: !token });
-
-  useEffect(() => {
-    const failure = asApiFailure(sessionState.error ?? cartError);
-    if (!token || !failure || !['SESSION_REQUIRED', 'SESSION_INVALID'].includes(failure.code)) {
-      return;
-    }
-    requestedSession.current = false;
-    dispatch(sessionExpired());
-  }, [cartError, dispatch, sessionState.error, token]);
+  const { data: cart } = useGetCartQuery(undefined, { skip: !token });
 
   useEffect(() => {
     if (token || requestedSession.current) return;

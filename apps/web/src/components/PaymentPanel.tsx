@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import { CreditCard, Loader2, X } from 'lucide-react';
 import type { Order, Payment, Scenario } from '@checkout/contracts';
 import {
@@ -33,6 +33,7 @@ type PaymentPanelProps = {
 
 export function PaymentPanel({ order, onPaymentSettled, onPaymentCancelled }: PaymentPanelProps) {
   const dispatch = useAppDispatch();
+  const paymentRequestInFlight = useRef(false);
   const { paymentId, paymentKey, form } = useAppSelector((state) => state.checkout);
   const cachedPayment = useAppSelector((state) =>
     paymentId ? checkoutApi.endpoints.getPayment.select(paymentId)(state).data : undefined,
@@ -77,6 +78,8 @@ export function PaymentPanel({ order, onPaymentSettled, onPaymentCancelled }: Pa
   }, [payment]);
 
   const submitScenario = async (scenario: Scenario) => {
+    if (paymentRequestInFlight.current) return;
+    paymentRequestInFlight.current = true;
     try {
       let activePayment = payment;
       if (!activePayment || terminalPayment.has(activePayment.status)) {
@@ -96,6 +99,8 @@ export function PaymentPanel({ order, onPaymentSettled, onPaymentCancelled }: Pa
           .catch(() => []);
         if (payments[0]) dispatch(paymentReceived(payments[0].id));
       }
+    } finally {
+      paymentRequestInFlight.current = false;
     }
   };
 
@@ -136,11 +141,7 @@ export function PaymentPanel({ order, onPaymentSettled, onPaymentCancelled }: Pa
         <button
           className="ghost-button"
           type="button"
-          disabled={
-            busy ||
-            payment?.status === 'processing' ||
-            Boolean(payment && terminalPayment.has(payment.status))
-          }
+          disabled={busy || payment?.status === 'processing' || payment?.status === 'succeeded'}
           onClick={() => void submitScenario('cancel')}
         >
           <X size={16} aria-hidden />

@@ -24,7 +24,6 @@ import {
 import { formatDateTime, formatMoney } from '../lib/format';
 import {
   formChanged,
-  orderCleared,
   orderReceived,
   orderRequestStarted,
   type CheckoutFormState,
@@ -252,7 +251,7 @@ export function CheckoutPage() {
           </div>
           <div className="actions-row">
             <button className="ghost-button" type="button" onClick={() => navigate('/')}>
-              Вернуться к покупкам
+              Вернуться в корзину
             </button>
             {!order ? (
               <button
@@ -318,8 +317,7 @@ export function CheckoutPage() {
                 if (result.data?.status === 'paid') navigate('/success');
               }}
               onPaymentCancelled={async () => {
-                dispatch(orderCleared());
-                navigate('/', { replace: true });
+                await orderState.refetch();
               }}
             />
           ) : null}

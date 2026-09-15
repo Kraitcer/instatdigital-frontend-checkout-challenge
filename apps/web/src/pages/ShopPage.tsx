@@ -31,7 +31,9 @@ export function ShopPage() {
       if (quantity > 0) await setCartItem({ productId, quantity }).unwrap();
       else await removeCartItem(productId).unwrap();
       dispatch(orderCleared());
-    } catch {
+    } catch (caught) {
+      const failure = caught as { code?: string };
+      if (failure.code === 'CART_VERSION_CONFLICT') void cartState.refetch();
       return;
     } finally {
       setPendingProductId(null);
@@ -39,7 +41,17 @@ export function ShopPage() {
   };
 
   const removeItem = async (productId: string) => {
-    await changeQuantity(productId, 0);
+    setPendingProductId(productId);
+    try {
+      await removeCartItem(productId).unwrap();
+      dispatch(orderCleared());
+    } catch (caught) {
+      const failure = caught as { code?: string };
+      if (failure.code === 'CART_VERSION_CONFLICT') void cartState.refetch();
+      return;
+    } finally {
+      setPendingProductId(null);
+    }
   };
 
   if (productsState.isLoading || cartState.isLoading) {
