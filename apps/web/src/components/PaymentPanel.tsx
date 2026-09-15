@@ -20,7 +20,7 @@ const paymentMessage = (payment: Payment) => {
   if (payment.status === 'processing') return 'Платёж обрабатывается';
   if (payment.status === 'failed') return 'Банк отказал в оплате. Можно повторить этот же заказ.';
   if (payment.status === 'cancelled')
-    return 'Оплата отменена. Заказ сохранён, можно попробовать снова.';
+    return 'Попытка оплаты отменена. Заказ сохранён, можно попробовать снова.';
   if (payment.status === 'succeeded') return 'Оплата подтверждена сервером.';
   return 'Попытка оплаты создана.';
 };
@@ -28,9 +28,10 @@ const paymentMessage = (payment: Payment) => {
 type PaymentPanelProps = {
   order: Order;
   onPaymentSettled: () => Promise<void>;
+  onPaymentCancelled: () => Promise<void>;
 };
 
-export function PaymentPanel({ order, onPaymentSettled }: PaymentPanelProps) {
+export function PaymentPanel({ order, onPaymentSettled, onPaymentCancelled }: PaymentPanelProps) {
   const dispatch = useAppDispatch();
   const { paymentId, paymentKey, form } = useAppSelector((state) => state.checkout);
   const cachedPayment = useAppSelector((state) =>
@@ -86,6 +87,7 @@ export function PaymentPanel({ order, onPaymentSettled }: PaymentPanelProps) {
       }
       await simulatePayment({ paymentId: activePayment.id, scenario }).unwrap();
       dispatch(checkoutApi.util.invalidateTags(['Payment', 'Order']));
+      if (scenario === 'cancel') await onPaymentCancelled();
     } catch (caught) {
       const failure = caught as { code?: string };
       if (failure.code === 'PAYMENT_IN_PROGRESS') {
@@ -142,7 +144,7 @@ export function PaymentPanel({ order, onPaymentSettled }: PaymentPanelProps) {
           onClick={() => void submitScenario('cancel')}
         >
           <X size={16} aria-hidden />
-          Отменить
+          Отменить попытку
         </button>
         <button
           className="checkout-button"

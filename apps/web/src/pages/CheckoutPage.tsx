@@ -24,6 +24,7 @@ import {
 import { formatDateTime, formatMoney } from '../lib/format';
 import {
   formChanged,
+  orderCleared,
   orderReceived,
   orderRequestStarted,
   type CheckoutFormState,
@@ -121,6 +122,7 @@ export function CheckoutPage() {
           setError(field.name as FieldPath<CheckoutFormState>, { message: field.message });
         }
         if (failure.code === 'CART_VERSION_CONFLICT' || failure.code === 'QUOTE_EXPIRED') {
+          resetQuote();
           void cartState.refetch();
         }
       }
@@ -250,7 +252,7 @@ export function CheckoutPage() {
           </div>
           <div className="actions-row">
             <button className="ghost-button" type="button" onClick={() => navigate('/')}>
-              Вернуться в корзину
+              Вернуться к покупкам
             </button>
             {!order ? (
               <button
@@ -314,6 +316,10 @@ export function CheckoutPage() {
               onPaymentSettled={async () => {
                 const result = await orderState.refetch();
                 if (result.data?.status === 'paid') navigate('/success');
+              }}
+              onPaymentCancelled={async () => {
+                dispatch(orderCleared());
+                navigate('/', { replace: true });
               }}
             />
           ) : null}

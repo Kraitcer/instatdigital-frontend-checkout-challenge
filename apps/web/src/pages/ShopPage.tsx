@@ -39,15 +39,7 @@ export function ShopPage() {
   };
 
   const removeItem = async (productId: string) => {
-    setPendingProductId(productId);
-    try {
-      await removeCartItem(productId).unwrap();
-      dispatch(orderCleared());
-    } catch {
-      return;
-    } finally {
-      setPendingProductId(null);
-    }
+    await changeQuantity(productId, 0);
   };
 
   if (productsState.isLoading || cartState.isLoading) {

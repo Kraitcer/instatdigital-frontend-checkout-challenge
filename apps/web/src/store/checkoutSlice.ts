@@ -53,6 +53,14 @@ const checkoutSlice = createSlice({
       state.token = action.payload.token;
       state.sessionId = action.payload.sessionId;
     },
+    sessionExpired(state) {
+      state.token = null;
+      state.sessionId = null;
+      state.orderId = null;
+      state.paymentId = null;
+      state.orderKey = null;
+      state.paymentKey = null;
+    },
     formChanged(state, action: PayloadAction<CheckoutFormState>) {
       state.form = action.payload;
     },
@@ -91,6 +99,7 @@ export const {
   paymentReceived,
   paymentRequestStarted,
   sessionReceived,
+  sessionExpired,
 } = checkoutSlice.actions;
 
 export const checkoutReducer = checkoutSlice.reducer;
